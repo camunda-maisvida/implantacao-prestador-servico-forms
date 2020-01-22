@@ -3,129 +3,81 @@
 
 <script cam-script type="text/form-script">
 
-	
-    inject(['$rootScope', function($rootScope) {
-		$scope.nomeSolicitante = $rootScope.authentication.name;
-		$scope.dataSolicitacao = new Date().toLocaleDateString();
-		$scope.dataSaidaOpened = false;
-		$scope.dataRetornoOpened = false;
-    }]);
+inject([ '$scope', '$http', function($scope, $http) {
+      camForm.on('form-loaded', function() {
+        // use injected $http service for making requests
+      });
 
-	$scope.calcularQtdDias = function(campo) {
-		if (!$scope.dataSaida || !$scope.dataRetorno) {
-			$scope.qtdDias = null;
-			return;
-		}
-		if ($scope.dataRetorno <= $scope.dataSaida) {	
-			alert('A data de saida deve ser maior que a data de retorno.');
-			if (campo == 'dataRetorno') {
-				$scope.dataRetorno = null;
-			} else if (campo == 'dataSaida') {
-				$scope.dataSaida = null;
+$scope.consultarCNESPorCNPJ = function() {
+		
+	console.log('cnpj:', $scope.cpfCnpj);
+	//$http.get('https://cnes-api.cfapps.io/cnes/estabelecimento/cnpj/'+$scope.cpfCnpj,
+	$http.get('http://localhost:8010/proxy/'+$scope.cpfCnpj, 
+		{
+    		headers: {
+				'Access-Control-Allow-Origin' : '*',
+				'Access-Control-Allow-Methods' : 'DELETE, POST, GET, OPTIONS',
+				'Access-Control-Allow-Headers' : 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With'
 			}
-			$scope.qtdDias = null;
-			return;
 		}
-		var diff = Math.abs($scope.dataSaida.getTime() - $scope.dataRetorno.getTime());
- 		$scope.qtdDias = Math.ceil(diff / (1000 * 60 * 60 * 24));
+	).
+  		then(function successCallback(response) {
+    		console.log(JSON.stringify(response));
+			$scope.empresa = response.data.nomeEmpresarial.nome;
+			$scope.nomeFantasia = response.data.nomeFantasia.nome;
+
+
+  		}, function errorCallback(response) {
+    		console.log(response);
+		});
+  		
 	}
 
-	$scope.openDataSaida = function($event) {
-    	$event.preventDefault();
-    	$event.stopPropagation();
+    }]);
 
-    	$scope.dataSaidaOpened = true;
-  	};
+	
 
-	$scope.openDataRetorno = function($event) {
-    	$event.preventDefault();
-    	$event.stopPropagation();
-
-    	$scope.dataRetornoOpened = true;
-  	};
-
-	camForm.on('form-loaded', function() {
-    	// tell the form SDK to fetch the variable named 'invoiceData'
-    	camForm.variableManager.variableValue('nomeSolicitante', $scope.nomeSolicitante);
-		camForm.variableManager.variableValue('dataSolicitacao', $scope.dataSolicitacao);
-	});
-
-	camForm.on( 'submit', function(evt) {
-
-    	if ($scope.dataRetorno <= $scope.dataSaida) {
-			alert('A data de saida deve ser maior que a data de retorno.');
-			evt.submitPrevented = true;
-		}
-
-	});
+	
 </script>
 
 	<div class="row">
 		<div class="form-group col-xs-6">
-			<label for="nomeSolicitante-field">Nome do solicitante:</label>
-			<input readonly
-					cam-variable-name="nomeSolicitante" 
+			<label for="cpfCnpj-field">CNPJ:</label>
+			 <div class="input-group">
+				<input id="cpfCnpj-field"
+					cam-variable-name="cpfCnpj" 
 					cam-variable-type="String" 
 					class="form-control"/>
-		</div>
-		<div class="form-group col-xs-6">
-			<label for="dataSolicitacao-field">Data da solicitação:</label>
-			<input readonly
-					cam-variable-name="dataSolicitacao" 
-					cam-variable-type="String" 
-					class="form-control"/>
-		</div>	
-	</div>
-	
-	<div class="row">
-		<div class="form-group col-xs-6">
-			<label for="dataSaida-field">Data de saida:</label>
-			<div>
-				<input type="text"
-						ng-change="calcularQtdDias('dataSaida');"
-						cam-variable-name="dataSaida" 
-						cam-variable-type="Date"
-						uib-datepicker-popup="yyyy-MM-dd'T'HH:mm:ss"
-		       			is-open="dataSaidaOpened"
-						class="form-control"/>
 				<span class="input-group-btn">
-				    <button type="button"
-				            class="btn btn-default"
-				            ng-click="openDataSaida($event)">
-				      <i class="glyphicon glyphicon-calendar"></i>
-				    </button>
-		  		</span>
-	  		</div>
-		</div>
-		<div class="form-group col-xs-6">
-			<label for="dataRetorno-field">Data de retorno:</label>
-			<div>
-				<input type="text"
-						ng-change="calcularQtdDias('dataRetorno');"
-						cam-variable-name="dataRetorno" 
-						cam-variable-type="Date"
-						uib-datepicker-popup="yyyy-MM-dd'T'HH:mm:ss"
-		       			is-open="dataRetornoOpened"
-						class="form-control"/>
-				<span class="input-group-btn">
-				    <button type="button"
-				            class="btn btn-default"
-				            ng-click="openDataRetorno($event)">
-				      <i class="glyphicon glyphicon-calendar"></i>
-				    </button>
-		  		</span>
-	  		</div>
+			        <button class="btn btn-default" ng-click="consultarCNESPorCNPJ()" type="button">CNES</button>
+			    </span>
+		    </div>
 		</div>
 	</div>
 	
-	<div class="row">
-		<div class="form-group col-xs-6">
-			<label for="qtdDias-field">Quantidade de dias:</label>
-			<input type="number"
-					readonly
-					cam-variable-name="qtdDias" 
-					cam-variable-type="Integer" 
-					class="form-control"/>
+	<div ng-if="empresa">
+		<div class="row">
+			<div class="form-group col-xs-6">
+				<label>Empresa:</label>
+				 <div class="input-group">
+					<input readonly
+						cam-variable-name="empresa" 
+						cam-variable-type="String" 
+						class="form-control"/>
+			    </div>
+			</div>
+		</div>
+		
+		<div class="row">
+			<div class="form-group col-xs-6">
+				<label>Nome Fantasia:</label>
+				 <div class="input-group">
+					<input readonly
+						cam-variable-name="nomeFantasia" 
+						cam-variable-type="String" 
+						class="form-control"/>
+			    </div>
+			</div>
 		</div>
 	</div>
 	
