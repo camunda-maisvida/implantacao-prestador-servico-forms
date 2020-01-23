@@ -2,17 +2,15 @@
 <form role="form">
 
 <script cam-script type="text/form-script">
+var variableManager = camForm.variableManager;
 
-inject([ '$scope', '$http', function($scope, $http) {
-      camForm.on('form-loaded', function() {
-        // use injected $http service for making requests
-      });
+inject(['$http', function($http) {
 
-$scope.consultarCNESPorCNPJ = function() {
+	$scope.consultarCNESPorCNPJ = function() {
 		
-	console.log('cnpj:', $scope.cpfCnpj);
-	//$http.get('https://cnes-api.cfapps.io/cnes/estabelecimento/cnpj/'+$scope.cpfCnpj,
-	$http.get('http://localhost:8010/proxy/'+$scope.cpfCnpj, 
+	console.log('cnpj:', $scope.cnpj);
+	//$http.get('https://cnes-api.cfapps.io/cnes/estabelecimento/cnpj/'+$scope.cnpj,
+	$http.get('http://localhost:8010/proxy/'+$scope.cnpj, 
 		{
     		headers: {
 				'Access-Control-Allow-Origin' : '*',
@@ -23,18 +21,42 @@ $scope.consultarCNESPorCNPJ = function() {
 	).
   		then(function successCallback(response) {
     		console.log(JSON.stringify(response));
-			$scope.empresa = response.data.nomeEmpresarial.nome;
-			$scope.nomeFantasia = response.data.nomeFantasia.nome;
 
+			$scope.codigoCNES = response.data.codigoCNES.codigo;
+			$scope.codigoUnidade = response.data.codigoUnidade.codigo;
+			$scope.nomeFantasia = response.data.nomeFantasia.nome;
+			$scope.nomeEmpresarial = response.data.nomeEmpresarial.nome;
+			$scope.logradouro = response.data.endereco.nomeLogradouro;
+			$scope.numero = response.data.endereco.numero;
+			$scope.bairro = response.data.endereco.bairro.descricaoBairro;
+			$scope.cidade = response.data.endereco.municipio.nomeMunicipio;
+			$scope.cep = response.data.endereco.cep.numeroCEP;
+			$scope.uf = response.data.endereco.municipio.uf.siglaUF;
+			$scope.dataAtualizacao = response.data.dataAtualizacao;
+			$scope.email = response.data.email;
 
   		}, function errorCallback(response) {
-    		console.log(response);
+    		console.log('Error:', response);
 		});
   		
 	}
 
-    }]);
+	$scope.atualizarDados = function() {
+		$scope.habilitaCampos = !$scope.habilitaCampos;
+	}
 
+}]);
+
+
+camForm.on('form-loaded', function() {
+	//variableManager.fetchVariable('codigoCNES');
+	$scope.habilitaCampos = false;
+	console.log('form-loaded', $scope);
+});
+
+camForm.on( 'submit', function() {
+	//variableManager.variable( 'codigoCNES' ).value = $scope.codigoCNES;
+});
 	
 
 	
@@ -42,43 +64,168 @@ $scope.consultarCNESPorCNPJ = function() {
 
 	<div class="row">
 		<div class="form-group col-xs-6">
-			<label for="cpfCnpj-field">CNPJ:</label>
+			<label for="cnpj-field">CNPJ:</label>
 			 <div class="input-group">
-				<input id="cpfCnpj-field"
-					cam-variable-name="cpfCnpj" 
+				<input id="cnpj-field"
+					cam-variable-name="cnpj" 
 					cam-variable-type="String" 
 					class="form-control"/>
 				<span class="input-group-btn">
-			        <button class="btn btn-default" ng-click="consultarCNESPorCNPJ()" type="button">CNES</button>
+			        <button type="button" class="btn btn-default" ng-click="consultarCNESPorCNPJ()">CNES</button>
 			    </span>
 		    </div>
 		</div>
 	</div>
 	
-	<div ng-if="empresa">
+	<div ng-show="codigoCNES">
+		<div class="row">
+			<div class="col-xs-12">
+				<div class="text-right">
+					<button type="button" class="btn btn-secondary" ng-click="atualizarDados()">Atualizar Dados</button>
+				</div>
+			</div>
+		</div>
+
 		<div class="row">
 			<div class="form-group col-xs-6">
-				<label>Empresa:</label>
-				 <div class="input-group">
-					<input readonly
-						cam-variable-name="empresa" 
-						cam-variable-type="String" 
-						class="form-control"/>
-			    </div>
+				<label>Código CNES:</label>
+				<input cam-variable-name="codigoCNES" 
+					cam-variable-type="String" 
+					disabled="disabled"
+					class="form-control"/>
+			</div>
+			<div class="form-group col-xs-6">
+				<label>Código Unidade:</label>
+				<input cam-variable-name="codigoUnidade" 
+					cam-variable-type="String" 
+					disabled="disabled"
+					class="form-control"/>
 			</div>
 		</div>
 		
 		<div class="row">
-			<div class="form-group col-xs-6">
+			<div class="form-group col-xs-12">
 				<label>Nome Fantasia:</label>
-				 <div class="input-group">
-					<input readonly
-						cam-variable-name="nomeFantasia" 
-						cam-variable-type="String" 
-						class="form-control"/>
-			    </div>
+				<input cam-variable-name="nomeFantasia" 
+					cam-variable-type="String" 
+					disabled="disabled"
+					class="form-control"/>
 			</div>
 		</div>
+		
+		<div class="row">
+			<div class="form-group col-xs-12">
+				<label>Nome Empresarial:</label>
+				<input cam-variable-name="nomeEmpresarial" 
+					cam-variable-type="String" 
+					disabled="disabled"
+					class="form-control"/>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="form-group col-xs-12">
+				<label>Logradouro:</label>
+				<input cam-variable-name="logradouro" 
+					cam-variable-type="String" 
+					ng-disabled="!habilitaCampos"
+					class="form-control"/>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="form-group col-xs-6">
+				<label>Número:</label>
+				<input cam-variable-name="numero" 
+					cam-variable-type="String" 
+					ng-disabled="!habilitaCampos"
+					class="form-control"/>
+			</div>
+			<div class="form-group col-xs-6">
+				<label>Bairro:</label>
+				<input cam-variable-name="bairro" 
+					cam-variable-type="String" 
+					ng-disabled="!habilitaCampos"
+					class="form-control"/>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="form-group col-xs-6">
+				<label>Cidade:</label>
+				<input cam-variable-name="cidade" 
+					cam-variable-type="String" 
+					ng-disabled="!habilitaCampos"
+					class="form-control"/>
+			</div>
+			<div class="form-group col-xs-6">
+				<label>CEP:</label>
+				<input cam-variable-name="cep" 
+					cam-variable-type="String" 
+					ng-disabled="!habilitaCampos"
+					class="form-control"/>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="form-group col-xs-6">
+				<label>UF:</label>
+				<select id="uf-field"
+						name="uf"
+						cam-variable-name="uf"
+						cam-variable-type="String"
+						ng-disabled="!habilitaCampos"
+						class="form-control">
+					<option value="AC">AC</option>
+					<option value="AL">AL</option>
+					<option value="AM">AM</option>
+					<option value="AP">AP</option>
+					<option value="BA">BA</option>
+					<option value="CE">CE</option>
+					<option value="DF">DF</option>
+					<option value="ES">ES</option>
+					<option value="GO">GO</option>
+					<option value="MA">MA</option>
+					<option value="MG">MG</option>
+					<option value="MS">MS</option>
+					<option value="MT">MT</option>
+					<option value="PA">PA</option>
+					<option value="PB">PB</option>
+					<option value="PE">PE</option>
+					<option value="PI">PI</option>
+					<option value="PR">PR</option>
+					<option value="RJ">RJ</option>
+					<option value="RN">RN</option>
+					<option value="RO">RO</option>
+					<option value="RR">RR</option>
+					<option value="RS">RS</option>
+					<option value="SC">SC</option>
+					<option value="SE">SE</option>
+					<option value="SP">SP</option>
+					<option value="TO">TO</option>
+				</select>
+					
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="form-group col-xs-6">
+				<label>Data Atualização:</label>
+				<input cam-variable-name="dataAtualizacao" 
+					cam-variable-type="Date"
+					ng-model="dataAtualizacao | date: 'yyyy-MM-ddTHH:mm:ss'"
+					disabled="disabled"
+					class="form-control"/>
+			</div>
+			<div class="form-group col-xs-6">
+				<label>E-mail:</label>
+				<input cam-variable-name="email" 
+					cam-variable-type="String" 
+					ng-disabled="!habilitaCampos"
+					class="form-control"/>
+			</div>
+		</div>
+
 	</div>
 	
 </form>
