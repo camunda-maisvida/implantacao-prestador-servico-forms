@@ -7,10 +7,30 @@
 
 inject(['$http', function($http) {
 
-	$scope.limparCampos = function() {
+	$scope.limparCapitulosGruposSubgrupos = function() {
 		$scope.capitulos = [];
 		$scope.grupos = [];
 		$scope.subgrupos = [];
+	}
+
+	$scope.limpar = function() {
+		$scope.tabelas = [];
+		$scope.capitulos = [];
+		$scope.grupos = [];
+		$scope.subgrupos = [];
+		$scope.procedimentos = [];
+		
+		$scope.tabela = null;
+		$scope.capitulo = null;
+		$scope.grupo = null;
+    	$scope.subgrupo = null;
+    	$scope.procedimento = null;
+
+		$scope.buscarTabelas();
+	}
+
+	$scope.init = function() {
+		$scope.buscarTabelas();
 	}
 
 	$scope.buscarTabelas = function() {
@@ -18,10 +38,9 @@ inject(['$http', function($http) {
 		$http.get('http://localhost:8011/proxy/cbhpm/tabelas').then(
 			function successCallback(response) {
 				$scope.tabelas = response.data;
-  			
+
 			}, function errorCallback(response) {
     			console.log('Error:', response);
-
 			}
 		);
 
@@ -29,15 +48,15 @@ inject(['$http', function($http) {
 
 	$scope.buscarCapitulosPorTabela = function() {
 
-		if ($scope.tabela == 0) {
-			$scope.limparCampos();
+		if (!$scope.tabela) {
+			$scope.limparCapitulosGruposSubgrupos();
 			return;
 		}
 
-		$http.get('http://localhost:8011/proxy/cbhpm/capitulos/tabela/'+$scope.tabela).then(
+		$http.get('http://localhost:8011/proxy/cbhpm/capitulos/tabela/'+$scope.tabela.id).then(
 			function successCallback(response) {
 				$scope.capitulos = response.data;
-  			
+
 			}, function errorCallback(response) {
     			console.log('Error:', response);
 
@@ -48,7 +67,11 @@ inject(['$http', function($http) {
 
 	$scope.buscarGruposPorCapitulo = function() {
 
-		$http.get('http://localhost:8011/proxy/cbhpm/grupos/capitulo/'+$scope.capitulo).then(
+		if (!$scope.capitulo) {
+			return;
+		}
+
+		$http.get('http://localhost:8011/proxy/cbhpm/grupos/capitulo/'+$scope.capitulo.id).then(
 			function successCallback(response) {
 				$scope.grupos = response.data;
   			
@@ -62,7 +85,11 @@ inject(['$http', function($http) {
 
 	$scope.buscarSubgruposPorGrupo = function() {
 
-		$http.get('http://localhost:8011/proxy/cbhpm/subgrupos/grupo/'+$scope.grupo).then(
+		if (!$scope.grupo) {
+			return;
+		}
+
+		$http.get('http://localhost:8011/proxy/cbhpm/subgrupos/grupo/'+$scope.grupo.id).then(
 			function successCallback(response) {
 				$scope.subgrupos = response.data;
   			
@@ -77,10 +104,10 @@ inject(['$http', function($http) {
 	$scope.buscarProcedimentos = function() {
 
 		var filtro = {
-			"tabelaId": $scope.tabela,
-			"capituloId": $scope.capitulo,
-			"grupoId": $scope.grupo,
-    		"subGrupoId": $scope.subgrupo,
+			"tabelaId": ($scope.tabela ? $scope.tabela.id : 0),
+			"capituloId": ($scope.capitulo ? $scope.capitulo.id : 0),
+			"grupoId": ($scope.grupo ? $scope.grupo.id : 0),
+    		"subGrupoId": ($scope.subgrupo ? $scope.subgrupo.id : 0),
     		"procedimentoDescricao": $scope.procedimento
 		};
 
@@ -105,21 +132,62 @@ inject(['$http', function($http) {
 		}
 		
 		$scope.procedimentos.forEach(proc => {
-			console.log('Procedimento selecionado: ', proc);
 			if (proc.selecionado) {
-				$scope.procedimentosSelecionados.push(proc);
+				console.log('Procedimento selecionado: ', proc);
+				var idx = $scope.procedimentosSelecionados.findIndex(procIdx => procIdx.id == proc.id);
+				if (idx == -1) {
+					$scope.procedimentosSelecionados.push(proc);
+					proc.selecionado = false;
+				}
 			}
 		});
+
+		$scope.selecionadoTodos = false;
 		
 	}
+
+	$scope.marcarProcedimentosTodos = function() {
+
+		if ($scope.procedimentos) {
+			$scope.procedimentos.forEach(proc => {
+				proc.selecionado = $scope.procedimentosTodos;
+			});
+		}
+	}
+
+	$scope.marcarProcedimentosSelecionadosTodos = function() {
+
+		if ($scope.procedimentosSelecionados) {
+			$scope.procedimentosSelecionados.forEach(proc => {
+				proc.selecionado = $scope.procedimentosSelecionadosTodos;
+			});
+		}
+	
+	}
+
+	$scope.excluirProcedimentos = function() {
+		var lista = [];
+		if ($scope.procedimentosSelecionados) {
+			$scope.procedimentosSelecionados.forEach(proc => {
+				if (!proc.selecionado) {
+					lista.push(proc);
+				}
+			});
+			$scope.procedimentosSelecionados = lista;
+		}
+
+	}
+
+
 
 
 }]);
 
 
 camForm.on('form-loaded', function() {
-	$scope.buscarTabelas();
-	console.log('form-loaded', $scope);
+	console.log('form-loaded');
+	//$scope.limpar();
+	$scope.init();
 });
 
 camForm.on( 'submit', function() {
@@ -133,12 +201,11 @@ camForm.on( 'submit', function() {
 			<label>Tabela:</label>
 			<select id="tabela-field"
 					name="tabela"
-					cam-variable-name="tabela"
-					cam-variable-type="Integer"
 					ng-change="buscarCapitulosPorTabela()"
+					ng-model="tabela"
+					ng-options="tab.descricao for tab in tabelas track by tab.id"
 					class="form-control">
-				<option value="0">SELECIONE</option>
-				<option ng-repeat="tab in tabelas" value="{{ tab.id }}">{{ tab.descricao }}</option>
+				<option value="">--- SELECIONE ---</option>
 			</select>
 		</div>
 	</div>
@@ -146,52 +213,49 @@ camForm.on( 'submit', function() {
 	<div class="row">
 		<div class="form-group col-xs-6">
 			<label>Capítulo:</label>
-			<select id="capitulo-field"
+			<select id="capitulo-field" 
 					name="capitulo"
-					cam-variable-name="capitulo"
-					cam-variable-type="Integer"
-					ng-change="buscarGruposPorCapitulo()" 
-					class="form-control">
-				<option value="0">SELECIONE</option>
-				<option ng-repeat="cap in capitulos" value="{{ cap.id }}">{{ cap.descricao }}</option>
-			</select>
+					ng-change="buscarGruposPorCapitulo()"
+      				ng-model="capitulo"
+      				ng-options="cap.descricao for cap in capitulos track by cap.id"
+      				class="form-control">
+      			<option value="">--- SELECIONE ---</option>
+      		</select>
 		</div>
 	</div>
 	
 	<div class="row">
 		<div class="form-group col-xs-6">
 			<label>Grupo:</label>
-			<select id="grupo-field"
+			<select id="grupo-field" 
 					name="grupo"
-					cam-variable-name="grupo"
-					cam-variable-type="Integer"
-					ng-change="buscarSubgruposPorGrupo()" 
-					class="form-control">
-				<option value="0">SELECIONE</option>
-				<option ng-repeat="gru in grupos" value="{{ gru.id }}">{{ gru.descricao }}</option>
-			</select>
+					ng-change="buscarSubgruposPorGrupo()"
+      				ng-model="grupo"
+      				ng-options="gru.descricao for gru in grupos track by gru.id"
+      				class="form-control">
+      			<option value="">--- SELECIONE ---</option>
+      		</select>
 		</div>
 	</div>
 	
 	<div class="row">
 		<div class="form-group col-xs-6">
 			<label>Subgrupo:</label>
-			<select id="subgrupo-field"
+			<select id="subgrupo-field" 
 					name="subgrupo"
-					cam-variable-name="subgrupo"
-					cam-variable-type="Integer"
-					class="form-control">
-				<option value="0">SELECIONE</option>
-				<option ng-repeat="subG in subgrupos" value="{{ subG.id }}">{{ subG.descricao }}</option>
-			</select>
+					ng-change="buscarSubgruposPorGrupo()"
+      				ng-model="subgrupo"
+      				ng-options="subG.descricao for subG in subgrupos track by subG.id"
+      				class="form-control">
+      			<option value="">--- SELECIONE ---</option>
+      		</select>
 		</div>
 	</div>
 	
 	<div class="row">
 		<div class="form-group col-xs-6">
 			<label for="procedimento-field">Procedimento:</label>
-			<input cam-variable-name="procedimento" 
-					cam-variable-type="String" 
+			<input ng-model="procedimento" 
 					class="form-control"/>
 		</div>
 	</div>
@@ -199,6 +263,7 @@ camForm.on( 'submit', function() {
 	<div class="row">
 		<div class="form-group col-xs-6">
 			<button ng-click="buscarProcedimentos()">Consultar</button>
+			<button ng-click="limpar()">Limpar</button>
 		</div>
 	</div>
 	
@@ -217,7 +282,8 @@ camForm.on( 'submit', function() {
 					<tr>
 						<td>
 							<input type="checkbox"
-						       ng-model="selecionarTodos">
+						       ng-model="procedimentosTodos"
+						       ng-change="marcarProcedimentosTodos()">
 						</td>
 						<td><label>Código</label></td>
 						<td><label>Código Extendido</label></td>
@@ -232,7 +298,7 @@ camForm.on( 'submit', function() {
 					<tr ng-repeat="proc in procedimentos">
 						<td width="1%">
 							<input type="checkbox"
-								ng-model="selecionado">
+								ng-model="proc.selecionado">
 						</td>
 						<td width="10%">{{ proc.codigo }}</td>
 						<td width="10%">{{ proc.codigoExtendido }}</td>
@@ -267,6 +333,11 @@ camForm.on( 'submit', function() {
 			<table class="table table-striped">
 				<thead>
 					<tr>
+						<td>
+							<input type="checkbox"
+						       ng-model="procedimentosSelecionadosTodos"
+						       ng-change="marcarProcedimentosSelecionadosTodos()">
+						</td>
 						<td><label>Código</label></td>
 						<td><label>Código Extendido</label></td>
 						<td><label>Procedimento</label></td>
@@ -278,18 +349,30 @@ camForm.on( 'submit', function() {
 				</thead>
 				<tbody>
 					<tr ng-repeat="proc in procedimentosSelecionados">
-						<td>Código</td>
-						<td>Código Extendido</td>
-						<td>Procedimento</td>
-						<td>Porte</td>
-						<td>UCO</td>
-						<td>Porte Aneste</td>
-						<td>Número ...</td>
+						<td width="1%">
+							<input type="checkbox"
+								ng-model="proc.selecionado">
+						</td>
+						<td width="10%">{{ proc.codigo }}</td>
+						<td width="10%">{{ proc.codigoExtendido }}</td>
+						<td width="39%">{{ proc.descricao }}</td>
+						<td width="10%">{{ proc.porte }}</td>
+						<td width="10%">{{ proc.uco }}</td>
+						<td width="10%">{{ proc.porteAnest }}</td>
+						<td width="10%">{{ proc.numAuxiliares }}</td>
 					</tr>
 				</tbody>
 			</table>
 			
 		</div>
 	</div>
+	
+	<div class="row">
+		<div class="form-group col-xs-6">
+			<button ng-click="excluirProcedimentos()">Excluir Procedimentos</button>
+		</div>
+	</div>
+	
+	
 	
 </form>
