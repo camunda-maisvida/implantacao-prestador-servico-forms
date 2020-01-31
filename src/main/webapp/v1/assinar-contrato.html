@@ -1,0 +1,128 @@
+
+<form role="form">
+
+<script cam-script type="text/form-script">
+var variableManager = camForm.variableManager;
+
+inject(['$http', function($http) {
+
+	$scope.buscarPrestadorPorCnpj = function() {
+
+		$http.get('http://localhost:8011/proxy/prestadores/cnpj/'+$scope.prestador.cnpj).then(
+			function successCallback(response) {
+
+				$scope.prestador = response.data;
+
+			}, function errorCallback(response) {
+    			console.log('Error:', response);
+			}
+		);
+	}
+
+	$scope.limparValorProposto = function(prePro) {
+		var idx = $scope.prestador.prestadorProcedimentoItem.findIndex(pPro => pPro.selecionado);
+		$scope.analise = null;
+		if (idx != -1) {
+			$scope.analise = 'N';
+		}
+
+		if (!prePro.selecionado) {
+			prePro.valorProposto = null;
+		}
+	}
+
+	$scope.init = function() {
+		$scope.analiseContrato = null;
+		// $scope.buscarPrestadorPorCnpj();
+		$scope.$watch(
+			"prestador.contratoAssinadoBase64",
+			function() {
+
+				var valido = ($scope.prestador.contratoAssinadoBase64 != null);
+				$scope.$$camForm.$setValidity('custom', valido, window);
+
+			}
+		);
+
+	}
+
+	$scope.addFile = function() {
+		var f = document.getElementById('file').files[0],
+		r = new FileReader();
+
+		r.onloadend = function(e) {
+			var data = e.target.result;
+			//console.log('File: ', data);
+			$scope.prestador.contratoAssinadoBase64 = btoa(data);
+			console.log('Base64: ', $scope.prestador.contratoAssinadoBase64);
+			//send your binary data via $http or $resource or do anything else with it
+		}
+
+		r.readAsBinaryString(f);
+	}
+
+
+	camForm.on('form-loaded', function() {
+		camForm.variableManager.fetchVariable('cnpj');
+		camForm.variableManager.fetchVariable('nomeEmpresarial');
+		camForm.variableManager.createVariable({name: 'analiseContrato', type: 'String'});
+	});
+
+	camForm.on('variables-fetched', function() {
+		$scope.prestador = { };
+		$scope.prestador.cnpj = camForm.variableManager.variable('cnpj').value;
+		$scope.prestador.nomeEmpresarial = camForm.variableManager.variable('nomeEmpresarial').value;
+
+		$scope.init();
+	});
+
+	camForm.on( 'submit', function() {
+		// Analise do contrato:
+		// SA - Solicita Ajustes
+		// OK - Contrato OK
+
+		camForm.variableManager.variable('analiseContrato').value = $scope.analiseContrato;
+
+		var obj = {
+			'cnpj': $scope.prestador.cnpj,
+			'arquivoBase64': $scope.prestador.contratoAssinadoBase64
+		};
+
+		$http.post('http://localhost:8011/proxy/prestadores/cnpj/'+$scope.prestador.cnpj+'/contrato-assinado', obj).then(
+			function successCallback(response) {
+    		
+				console.log('Dados salvos com sucesso!');
+
+  			}, function errorCallback(response) {
+    			console.log('Error:', response);
+			}
+		);
+
+	});
+
+}]);
+
+
+</script>
+
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>CNPJ:</label>
+		{{ prestador.cnpj }}
+	</div>
+	<div class="form-group col-xs-6">
+		<label>E-mail:</label>
+		{{ prestador.nomeEmpresarial }}
+	</div>
+</div>
+
+<div class="row">
+	<div class="col-xs-4">
+		<label>Upload do contrato</label>
+		<input type="file" id="file" name="file"/>
+		<button ng-click="addFile()">Add</button>
+	</div>
+</div>
+
+
+</form>

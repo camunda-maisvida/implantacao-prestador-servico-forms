@@ -1,0 +1,132 @@
+
+<form role="form">
+
+<script cam-script type="text/form-script">
+var variableManager = camForm.variableManager;
+
+inject(['$http', function($http) {
+
+	$scope.buscarPrestadorPorCnpj = function() {
+
+		$http.get('http://localhost:8011/proxy/prestadores/cnpj/'+$scope.prestador.cnpj).then(
+			function successCallback(response) {
+
+				$scope.prestador = response.data;
+
+			}, function errorCallback(response) {
+    			console.log('Error:', response);
+			}
+		);
+	}
+
+	$scope.limparValorProposto = function(prePro) {
+		var idx = $scope.prestador.prestadorProcedimentoItem.findIndex(pPro => pPro.selecionado);
+		$scope.analise = null;
+		if (idx != -1) {
+			$scope.analise = 'N';
+		}
+
+		if (!prePro.selecionado) {
+			prePro.valorProposto = null;
+		}
+	}
+
+	$scope.buscarContrato = function() {
+
+		$http.get('http://localhost:8011/proxy/prestadores/cnpj/'+$scope.prestador.cnpj+'/contrato').then(
+			function successCallback(response) {
+
+				console.log('response: ', response);
+
+				var b64 = response.data.arquivoBase64;
+				var link = document.getElementById('linkDownload');
+				link.download = 'contrato-prestador-'+$scope.prestador.cnpj+'.pdf';
+				//link.href = 'data:application/octet-stream;base64,' + b64;
+				link.href = 'data:application/pdf;base64,' + b64;
+
+			}, function errorCallback(response) {
+    			console.log('Error:', response);
+			}
+		);
+
+	}
+
+	$scope.init = function() {
+		$scope.analiseContrato = null;
+		// $scope.buscarPrestadorPorCnpj();
+		
+		$scope.buscarContrato();
+
+
+	}
+
+
+	camForm.on('form-loaded', function() {
+		camForm.variableManager.fetchVariable('cnpj');
+		camForm.variableManager.fetchVariable('nomeEmpresarial');
+		camForm.variableManager.createVariable({name: 'analiseContrato', type: 'String'});
+		camForm.variableManager.createVariable({name: 'ajustesContrato', type: 'String'});
+	});
+
+	camForm.on('variables-fetched', function() {
+		$scope.prestador = { };
+		$scope.prestador.cnpj = camForm.variableManager.variable('cnpj').value;
+		$scope.prestador.nomeEmpresarial = camForm.variableManager.variable('nomeEmpresarial').value;
+
+		$scope.init();
+	});
+
+	camForm.on( 'submit', function() {
+		// Analise do contrato:
+		// SA - Solicita Ajustes
+		// OK - Contrato OK
+
+		camForm.variableManager.variable('analiseContrato').value = $scope.analiseContrato;
+		camForm.variableManager.variable('ajustesContrato').value = $scope.ajustesContrato;
+
+	});
+
+}]);
+
+
+</script>
+
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>CNPJ:</label>
+		{{ prestador.cnpj }}
+	</div>
+	<div class="form-group col-xs-6">
+		<label>E-mail:</label>
+		{{ prestador.nomeEmpresarial }}
+	</div>
+</div>
+
+<div class="row">
+	<div class="col-xs-12">
+		Para sua análise e assinatura do contrato, faça o download do arquivo: <a class="btn btn-primary" href="" id="linkDownload">Contrato de credenciamento</a>
+	</div>
+</div>
+
+<br>
+<br>
+
+<div class="row">
+	<div class="col-xs-4">
+		<input type="radio" ng-model="analiseContrato" value="OK"> Contrato Aprovado
+	</div>
+	<div class="col-xs-4">
+		<input type="radio" ng-model="analiseContrato" value="SA"> Solicitar Ajustes
+	</div>
+</div>
+
+<div ng-show="analiseContrato == 'SA'">
+	<div class="row">
+		<div class="form-group col-xs-4">
+			<label>Ajustes no contrato</label>
+			<textarea rows="5" cols="100" ng-model="ajustesContrato"></textarea>
+		</div>
+	</div>
+</div>
+
+</form>

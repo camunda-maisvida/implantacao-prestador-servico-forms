@@ -1,0 +1,61 @@
+
+<form role="form">
+
+<script cam-script type="text/form-script">
+var variableManager = camForm.variableManager;
+
+inject(['$http', function($http) {
+
+	$scope.init = function() {
+		$scope.pessoa = { };
+	}
+
+	$scope.habilitar = function() {
+		$scope.$$camForm.$setValidity('custom', true, window);
+	}
+
+	$scope.desabilitar = function() {
+		$scope.$$camForm.$setValidity('custom', false, window);
+	}
+
+}]);
+
+
+camForm.on('form-loaded', function() {
+	//variableManager.fetchVariable('codigoCNES');
+	$scope.init();
+
+	$scope.$watch('$$camForm', function (a, b) {
+    	$scope.$$camForm.$setValidity('custom', false, window); // 'custom' validation key, binds window as form control
+	});
+
+	console.log('form-loaded -> $scope:', $scope);
+	console.log('form-loaded -> camForm:', camForm);
+});
+
+camForm.on( 'submit', function() {
+	//variableManager.variable( 'codigoCNES' ).value = $scope.codigoCNES;
+});
+	
+
+	
+</script>
+
+	<div class="row">
+		<div class="form-group col-xs-6">
+			<label>Nome:</label>
+			<input cam-variable-name="nome" 
+				cam-variable-type="String"
+				ng-model="pessoa.nome"
+				class="form-control"/>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="form-group col-xs-6">
+			<button ng-click="habilitar()">Habilitar</button>
+			<button ng-click="desabilitar()">Desabilitar</button>
+		</div>
+	</div>
+
+</form>

@@ -1,0 +1,211 @@
+
+<form role="form">
+
+<script cam-script type="text/form-script">
+var variableManager = camForm.variableManager;
+
+inject(['$http', function($http) {
+
+	$scope.buscarPrestadorPorCnpj = function() {
+
+		$http.get('http://localhost:8011/proxy/prestadores/cnpj/'+$scope.prestador.cnpj).then(
+			function successCallback(response) {
+				/*
+				$scope.prestador.id = response.data.id;
+				$scope.prestador.cnpj = response.data.cnpj;
+				$scope.prestador.codigoCnes = response.data.codigoCnes;
+				$scope.prestador.codigoUnidade = response.data.codigoUnidade;
+				$scope.prestador.nomeFantasia = response.data.nomeFantasia;
+				$scope.prestador.nomeEmpresarial = response.data.nomeEmpresarial;
+				$scope.prestador.email = response.data.email;
+				$scope.prestador.dtAtualizacao = response.data.dtAtualizacao;
+				$scope.prestador.endereco.logradouro = response.data.endereco.logradouro;
+				$scope.prestador.endereco.numero = response.data.endereco.numero;
+				$scope.prestador.endereco.bairro = response.data.endereco.bairro;
+				$scope.prestador.endereco.cidade = response.data.endereco.cidade;
+				$scope.prestador.endereco.cep = response.data.endereco.cep;
+				$scope.prestador.endereco.uf = response.data.endereco.uf;
+				*/
+				$scope.prestador = response.data;
+
+				console.log('Prestador:', $scope.prestador);
+
+			}, function errorCallback(response) {
+    			console.log('Error:', response);
+			}
+		);
+	}
+
+	$scope.limparValorProposto = function(prePro) {
+		var idx = $scope.prestador.prestadorProcedimentoItem.findIndex(pPro => pPro.selecionado);
+		$scope.analise = null;
+		if (idx != -1) {
+			$scope.analise = 'N';
+		}
+
+		if (!prePro.selecionado) {
+			prePro.valorProposto = null;
+		}
+	}
+
+	$scope.init = function() {
+		$scope.buscarPrestadorPorCnpj();
+	}
+
+
+	camForm.on('form-loaded', function() {
+		camForm.variableManager.fetchVariable('cnpj');
+	});
+
+	camForm.on('variables-fetched', function() {
+		$scope.prestador = { endereco: {} };
+		$scope.prestador.cnpj = camForm.variableManager.variable('cnpj').value;
+
+		$scope.init();
+	});
+
+	camForm.on( 'submit', function() {
+
+		var prest = {
+			'id': $scope.prestador.id,
+			'procedimentosSobrepor': []
+		};
+		$scope.prestador.prestadorProcedimentoItem.forEach(x => {
+			prest.procedimentosSobrepor.push({'idProcedimento': x.procedimento.id, 'valor': x.valor, 'valorProposto': x.valorProposto});
+		});
+
+		$http.post('http://localhost:8011/proxy/prestadores/procedimentos', prest).then(
+			function successCallback(response) {
+    		
+				console.log('Dados salvos com sucesso!');
+
+  			}, function errorCallback(response) {
+    				console.log('Error:', response);
+					throw new Error('Ops...deu erro!!!!');
+			}
+		);
+
+	});
+
+}]);
+
+
+</script>
+
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>CNPJ:</label>
+		{{ prestador.cnpj }}
+	</div>
+	<div class="form-group col-xs-6">
+		<label>E-mail:</label>
+		{{ prestador.email }}
+	</div>
+</div>
+
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>Código CNES:</label>
+		{{ prestador.codigoCnes }}
+	</div>
+	<div class="form-group col-xs-6">
+		<label>Código Unidade:</label>
+		{{ prestador.codigoUnidade }}
+	</div>
+</div>
+
+<div class="row">
+	<div class="form-group col-xs-12">
+		<label>Nome Fantasia:</label>
+		{{ prestador.nomeFantasia }}
+	</div>
+</div>
+		
+<div class="row">
+	<div class="form-group col-xs-12">
+		<label>Nome Empresarial:</label>
+		{{ prestador.nomeEmpresarial }}
+	</div>
+</div>
+
+<div class="row">
+	<div class="form-group col-xs-12">
+		<label>Logradouro:</label>
+		{{ prestador.endereco.logradouro }}
+	</div>
+</div>
+
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>Número:</label>
+		{{ prestador.endereco.numero }}
+	</div>
+	<div class="form-group col-xs-6">
+		<label>Bairro:</label>
+		{{ prestador.endereco.bairro }}
+	</div>
+</div>
+
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>Cidade:</label>
+		{{ prestador.endereco.cidade }}
+	</div>
+	<div class="form-group col-xs-6">
+		<label>UF:</label>
+		{{ prestador.endereco.uf }}				
+	</div>
+</div>
+
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>CEP:</label>
+		{{ prestador.endereco.cep }}
+	</div>
+</div>
+
+
+
+<div class="row">
+	<div class="col-xs-12">
+		<h3>Procedimentos</h3>
+		<hr>
+	</div>
+</div>
+	
+<div class="row">
+	<div class="col-xs-12">
+		
+		<table class="table table-striped">
+			<thead>
+				<tr>
+					<td><label>Código</label></td>
+					<td><label>Código Extendido</label></td>
+					<td><label>Procedimento</label></td>
+					<td><label>Porte</label></td>
+					<td><label>UCO</label></td>
+					<td><label>Porte Anest</label></td>
+					<td><label>Número Auxiliares</label></td>
+					<td><label>Valor</label></td>
+					<td><label>Valor Proposto</label></td>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="prePro in prestador.prestadorProcedimentoItem">
+					<td width="10%">{{ prePro.procedimento.codigo }}</td>
+					<td width="10%">{{ prePro.procedimento.codigoExtendido }}</td>
+					<td width="30%">{{ prePro.procedimento.descricao }}</td>
+					<td width="10%">{{ prePro.procedimento.porte }}</td>
+					<td width="10%">{{ prePro.procedimento.uco }}</td>
+					<td width="10%">{{ prePro.procedimento.porteAnest }}</td>
+					<td width="5%">{{ prePro.procedimento.numAuxiliares }}</td>
+					<td width="5%"><input type="number" ng-model="prePro.valor"></td>
+					<td width="5%">{{ prePro.valorProposto }}</td>
+				</tr>
+			</tbody>
+		</table>
+		
+	</div>
+</div>
+
+</form>

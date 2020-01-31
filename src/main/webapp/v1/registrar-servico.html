@@ -1,0 +1,522 @@
+
+<form role="form">
+
+<script cam-script type="text/form-script">
+var variableManager = camForm.variableManager;
+
+inject(['$http', function($http) {
+
+	$scope.limparCapitulosGruposSubgrupos = function() {
+		$scope.capitulos = [];
+		$scope.grupos = [];
+		$scope.subgrupos = [];
+	}
+
+	$scope.limpar = function() {
+		$scope.tabelas = [];
+		$scope.capitulos = [];
+		$scope.grupos = [];
+		$scope.subgrupos = [];
+		$scope.procedimentos = [];
+		
+		$scope.filtro = {};
+		/*
+		$scope.tabela = null;
+		$scope.capitulo = null;
+		$scope.grupo = null;
+    	$scope.subgrupo = null;
+    	$scope.procedimento = null;
+		*/
+
+		$scope.buscarTabelas();
+	}
+
+	$scope.buscarPrestadorPorCnpj = function() {
+
+		$http.get('http://localhost:8011/proxy/prestadores/cnpj/'+$scope.prestador.cnpj).then(
+			function successCallback(response) {
+				
+				$scope.prestador.id = response.data.id;
+				$scope.prestador.cnpj = response.data.cnpj;
+				$scope.prestador.codigoCnes = response.data.codigoCnes;
+				$scope.prestador.codigoUnidade = response.data.codigoUnidade;
+				$scope.prestador.nomeFantasia = response.data.nomeFantasia;
+				$scope.prestador.nomeEmpresarial = response.data.nomeEmpresarial;
+				$scope.prestador.email = response.data.email;
+				$scope.prestador.dtAtualizacao = response.data.dtAtualizacao;
+				$scope.prestador.endereco.logradouro = response.data.endereco.logradouro;
+				$scope.prestador.endereco.numero = response.data.endereco.numero;
+				$scope.prestador.endereco.bairro = response.data.endereco.bairro;
+				$scope.prestador.endereco.cidade = response.data.endereco.cidade;
+				$scope.prestador.endereco.cep = response.data.endereco.cep;
+				$scope.prestador.endereco.uf = response.data.endereco.uf;
+
+				console.log('Prestador:', $scope.prestador);
+
+			}, function errorCallback(response) {
+    			console.log('Error:', response);
+			}
+		);
+	}
+
+	$scope.buscarTabelas = function() {
+
+		$http.get('http://localhost:8011/proxy/cbhpm/tabelas').then(
+			function successCallback(response) {
+				$scope.tabelas = response.data;
+
+			}, function errorCallback(response) {
+    			console.log('Error:', response);
+			}
+		);
+
+	}
+
+	$scope.buscarCapitulosPorTabela = function() {
+
+		if (!$scope.filtro.tabela) {
+			$scope.limparCapitulosGruposSubgrupos();
+			return;
+		}
+
+		$http.get('http://localhost:8011/proxy/cbhpm/capitulos/tabela/'+$scope.filtro.tabela.id).then(
+			function successCallback(response) {
+				$scope.capitulos = response.data;
+
+			}, function errorCallback(response) {
+    			console.log('Error:', response);
+
+			}
+		);
+
+	}
+
+	$scope.buscarGruposPorCapitulo = function() {
+
+		if (!$scope.filtro.capitulo) {
+			return;
+		}
+
+		$http.get('http://localhost:8011/proxy/cbhpm/grupos/capitulo/'+$scope.filtro.capitulo.id).then(
+			function successCallback(response) {
+				$scope.grupos = response.data;
+  			
+			}, function errorCallback(response) {
+    			console.log('Error:', response);
+
+			}
+		);
+
+	}
+
+	$scope.buscarSubgruposPorGrupo = function() {
+
+		if (!$scope.filtro.grupo) {
+			return;
+		}
+
+		$http.get('http://localhost:8011/proxy/cbhpm/subgrupos/grupo/'+$scope.filtro.grupo.id).then(
+			function successCallback(response) {
+				$scope.subgrupos = response.data;
+  			
+			}, function errorCallback(response) {
+    			console.log('Error:', response);
+
+			}
+		);
+
+	}
+
+	$scope.buscarProcedimentos = function() {
+
+		var filtro = {
+			"tabelaId": ($scope.filtro.tabela ? $scope.filtro.tabela.id : 0),
+			"capituloId": ($scope.filtro.capitulo ? $scope.filtro.capitulo.id : 0),
+			"grupoId": ($scope.filtro.grupo ? $scope.filtro.grupo.id : 0),
+    		"subGrupoId": ($scope.filtro.subgrupo ? $scope.filtro.subgrupo.id : 0),
+    		"procedimentoDescricao": $scope.filtro.procedimento
+		};
+
+		console.log('Filtro para Procedimentos: ', filtro);
+
+		$http.post('http://localhost:8011/proxy/cbhpm/procedimentos/search', filtro).then(
+			function successCallback(response) {
+				$scope.procedimentos = response.data;
+  			
+			}, function errorCallback(response) {
+    			console.log('Error:', response);
+
+			}
+		);
+
+	}
+
+	$scope.clone = function(obj) {
+		return JSON.parse(JSON.stringify(obj));
+	}
+
+	$scope.incluirProcedimentos = function() {
+		
+		if (!$scope.procedimentosSelecionados) {
+			$scope.procedimentosSelecionados = [];
+		}
+		
+		$scope.procedimentos.forEach(proc => {
+			if (proc.selecionado) {
+				proc.selecionado = false;
+				console.log('Procedimento selecionado: ', proc);
+				var idx = $scope.procedimentosSelecionados.findIndex(procIdx => procIdx.id == proc.id);
+				if (idx == -1) {
+					$scope.procedimentosSelecionados.push($scope.clone(proc));
+				}
+			}
+		});
+
+		$scope.objTela.procedimentosTodos = false;
+		
+	}
+
+	$scope.marcarProcedimentosTodos = function() {
+
+		if ($scope.procedimentos) {
+			$scope.procedimentos.forEach(proc => {
+				proc.selecionado = $scope.objTela.procedimentosTodos;
+			});
+		}
+	}
+
+	$scope.marcarProcedimentosSelecionadosTodos = function() {
+
+		if ($scope.procedimentosSelecionados) {
+			$scope.procedimentosSelecionados.forEach(proc => {
+				proc.selecionado = $scope.objTela.procedimentosSelecionadosTodos;
+			});
+		}
+	
+	}
+
+	$scope.excluirProcedimentos = function() {
+		var lista = [];
+		if ($scope.procedimentosSelecionados) {
+			$scope.procedimentosSelecionados.forEach(proc => {
+				if (!proc.selecionado) {
+					lista.push(proc);
+				}
+			});
+			$scope.procedimentosSelecionados = lista;
+		}
+
+	}
+
+	$scope.init = function() {
+		$scope.filtro = { };
+		$scope.objTela = { };
+		$scope.$watchCollection(
+			"procedimentosSelecionados",
+			function( newValue, oldValue ) {
+
+				var valido = ($scope.procedimentosSelecionados && $scope.procedimentosSelecionados.length > 0)
+				$scope.$$camForm.$setValidity('custom', valido, window);
+
+			}
+		);
+		$scope.buscarPrestadorPorCnpj();
+		$scope.buscarTabelas();
+	}
+
+
+	camForm.on('form-loaded', function() {
+		camForm.variableManager.fetchVariable('cnpj');
+	});
+
+	camForm.on('variables-fetched', function() {
+		$scope.prestador = { endereco: {} };
+		$scope.prestador.cnpj = camForm.variableManager.variable('cnpj').value;
+		console.log($scope.prestador);
+
+		$scope.init();
+	});
+
+	camForm.on( 'submit', function() {
+
+		// salva os dados negociais..
+		var prest = {
+			'id': $scope.prestador.id,
+			'procedimentosSobrepor': []
+		};
+		$scope.procedimentosSelecionados.forEach(x => {
+			prest.procedimentosSobrepor.push({'idProcedimento': x.id, 'valor': x.valor});
+		});
+
+		console.log('Prestador: ', prest);
+
+		$http.post('http://localhost:8011/proxy/prestadores/procedimentos', prest).then(
+			function successCallback(response) {
+    		
+				console.log('Dados salvos com sucesso!');
+
+  			}, function errorCallback(response) {
+    			console.log('Error:', response);
+			}
+		);
+
+	});
+
+}]);
+
+
+</script>
+
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>CNPJ:</label>
+		{{ prestador.cnpj }}
+	</div>
+	<div class="form-group col-xs-6">
+		<label>E-mail:</label>
+		{{ prestador.email }}
+	</div>
+</div>
+
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>Código CNES:</label>
+		{{ prestador.codigoCnes }}
+	</div>
+	<div class="form-group col-xs-6">
+		<label>Código Unidade:</label>
+		{{ prestador.codigoUnidade }}
+	</div>
+</div>
+
+<div class="row">
+	<div class="form-group col-xs-12">
+		<label>Nome Fantasia:</label>
+		{{ prestador.nomeFantasia }}
+	</div>
+</div>
+		
+<div class="row">
+	<div class="form-group col-xs-12">
+		<label>Nome Empresarial:</label>
+		{{ prestador.nomeEmpresarial }}
+	</div>
+</div>
+
+<div class="row">
+	<div class="form-group col-xs-12">
+		<label>Logradouro:</label>
+		{{ prestador.endereco.logradouro }}
+	</div>
+</div>
+
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>Número:</label>
+		{{ prestador.endereco.numero }}
+	</div>
+	<div class="form-group col-xs-6">
+		<label>Bairro:</label>
+		{{ prestador.endereco.bairro }}
+	</div>
+</div>
+
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>Cidade:</label>
+		{{ prestador.endereco.cidade }}
+	</div>
+	<div class="form-group col-xs-6">
+		<label>UF:</label>
+		{{ prestador.endereco.uf }}				
+	</div>
+</div>
+
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>CEP:</label>
+		{{ prestador.endereco.cep }}
+	</div>
+</div>
+
+
+
+
+
+
+
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>Tabela:</label>
+		<select id="tabela-field"
+				name="tabela"
+				ng-change="buscarCapitulosPorTabela()"
+				ng-model="filtro.tabela"
+				ng-options="tab.descricao for tab in tabelas track by tab.id"
+				class="form-control">
+			<option value="">--- SELECIONE ---</option>
+		</select>
+	</div>
+</div>
+	
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>Capítulo:</label>
+		<select id="capitulo-field" 
+			name="capitulo"
+			ng-change="buscarGruposPorCapitulo()"
+			ng-model="filtro.capitulo"
+			ng-options="cap.descricao for cap in capitulos track by cap.id"
+			class="form-control">
+   			<option value="">--- SELECIONE ---</option>
+   		</select>
+	</div>
+</div>
+	
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>Grupo:</label>
+		<select id="grupo-field" 
+				name="grupo"
+				ng-change="buscarSubgruposPorGrupo()"
+     				ng-model="filtro.grupo"
+     				ng-options="gru.descricao for gru in grupos track by gru.id"
+     				class="form-control">
+     			<option value="">--- SELECIONE ---</option>
+     		</select>
+	</div>
+</div>
+	
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label>Subgrupo:</label>
+		<select id="subgrupo-field" 
+				name="subgrupo"
+				ng-change="buscarSubgruposPorGrupo()"
+     				ng-model="filtro.subgrupo"
+     				ng-options="subG.descricao for subG in subgrupos track by subG.id"
+     				class="form-control">
+     			<option value="">--- SELECIONE ---</option>
+     		</select>
+	</div>
+</div>
+	
+<div class="row">
+	<div class="form-group col-xs-6">
+		<label for="procedimento-field">Procedimento:</label>
+		<input ng-model="filtro.procedimento" 
+				class="form-control"/>
+	</div>
+</div>
+	
+<div class="row">
+	<div class="form-group col-xs-6">
+		<button ng-click="buscarProcedimentos()">Consultar</button>
+		<button ng-click="limpar()">Limpar</button>
+	</div>
+</div>
+	
+<div class="row">
+	<div class="col-xs-12">
+		<h3>Procedimentos Disponíveis</h3>
+		<hr>
+	</div>
+</div>
+	
+<div class="row">
+	<div class="col-xs-12">
+		
+		<table class="table table-striped">
+			<thead>
+				<tr>
+					<td>
+						<input type="checkbox"
+					       ng-model="objTela.procedimentosTodos"
+					       ng-change="marcarProcedimentosTodos()">
+					</td>
+					<td><label>Código</label></td>
+					<td><label>Código Extendido</label></td>
+					<td><label>Procedimento</label></td>
+					<td><label>Porte</label></td>
+					<td><label>UCO</label></td>
+					<td><label>Porte Anest</label></td>
+					<td><label>Número Auxiliares</label></td>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="proc in procedimentos">
+					<td width="1%">
+						<input type="checkbox"
+							ng-model="proc.selecionado">
+					</td>
+					<td width="10%">{{ proc.codigo }}</td>
+					<td width="10%">{{ proc.codigoExtendido }}</td>
+					<td width="39%">{{ proc.descricao }}</td>
+					<td width="10%">{{ proc.porte }}</td>
+					<td width="10%">{{ proc.uco }}</td>
+					<td width="10%">{{ proc.porteAnest }}</td>
+					<td width="10%">{{ proc.numAuxiliares }}</td>
+				</tr>
+			</tbody>
+		</table>
+		
+	</div>
+</div>
+	
+<div class="row">
+	<div class="form-group col-xs-6">
+		<button ng-click="incluirProcedimentos()">Incluir Procedimentos Selecionados</button>
+	</div>
+</div>
+	
+<div class="row">
+	<div class="col-xs-12">
+		<h3>Procedimentos Selecionados</h3>
+		<hr>
+	</div>
+</div>
+	
+<div class="row">
+	<div class="col-xs-12">
+		
+		<table class="table table-striped">
+			<thead>
+				<tr>
+					<td>
+						<input type="checkbox"
+					       ng-model="objTela.procedimentosSelecionadosTodos"
+					       ng-change="marcarProcedimentosSelecionadosTodos()">
+					</td>
+					<td><label>Código</label></td>
+					<td><label>Código Extendido</label></td>
+					<td><label>Procedimento</label></td>
+					<td><label>Porte</label></td>
+					<td><label>UCO</label></td>
+					<td><label>Porte Anest</label></td>
+					<td><label>Número Auxiliares</label></td>
+					<td><label>Valor</label></td>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="proc in procedimentosSelecionados">
+					<td width="1%">
+						<input type="checkbox"
+							ng-model="proc.selecionado">
+					</td>
+					<td width="10%">{{ proc.codigo }}</td>
+					<td width="10%">{{ proc.codigoExtendido }}</td>
+					<td width="29%">{{ proc.descricao }}</td>
+					<td width="10%">{{ proc.porte }}</td>
+					<td width="10%">{{ proc.uco }}</td>
+					<td width="10%">{{ proc.porteAnest }}</td>
+					<td width="10%">{{ proc.numAuxiliares }}</td>
+					<td width="10%"><input type="number" ng-model="proc.valor" required="required"></td>
+				</tr>
+			</tbody>
+		</table>
+		
+	</div>
+</div>
+
+
+</form>
