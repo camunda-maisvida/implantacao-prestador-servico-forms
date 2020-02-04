@@ -8,7 +8,7 @@ inject(['$http', function($http) {
 
 	$scope.buscarPrestadorPorCnpj = function() {
 
-		$http.get('http://localhost:8011/proxy/prestadores/cnpj/'+$scope.prestador.cnpj).then(
+		$http.get('http://localhost:8880/prestadores/cnpj/'+$scope.prestador.cnpj).then(
 			function successCallback(response) {
 				$scope.prestador = response.data;
 
@@ -79,7 +79,7 @@ inject(['$http', function($http) {
 				prest.procedimentosSobrepor.push({'idProcedimento': x.procedimento.id, 'valor': x.valor, 'valorProposto': x.valorProposto});
 			});
 
-			$http.post('http://localhost:8011/proxy/prestadores/procedimentos', prest).then(
+			$http.post('http://localhost:8880/prestadores/procedimentos', prest).then(
 				function successCallback(response) {
     		
 					console.log('Dados salvos com sucesso!');

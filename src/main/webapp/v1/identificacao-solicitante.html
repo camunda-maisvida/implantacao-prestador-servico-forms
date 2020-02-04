@@ -11,7 +11,7 @@ inject(['$http', function($http) {
 		console.log('cnpj:', $scope.prestador);
 
 		if ($scope.prestador.cnpj) {
-			$http.get('http://localhost:8011/proxy/prestadores/cnpj/'+$scope.prestador.cnpj).then(
+			$http.get('http://localhost:8880/prestadores/cnpj/'+$scope.prestador.cnpj).then(
 				function successCallback(response) {
     				console.log(JSON.stringify(response));
 
@@ -73,7 +73,7 @@ inject(['$http', function($http) {
 
 		$scope.prestador.dtAtualizacao = '2020-01-29T18:22:21';
 
-		$http.post('http://localhost:8011/proxy/prestadores', $scope.prestador).then(
+		$http.post('http://localhost:8880/prestadores', $scope.prestador).then(
 			function successCallback(response) {
     		
 				console.log('Dados salvos com sucesso!');
@@ -95,7 +95,7 @@ inject(['$http', function($http) {
 		<label for="cnpj-field">CNPJ(somente números):</label>
 		<div class="input-group">
 			<input id="cnpj-field"
-				type="number"
+				type="text"
 				cam-variable-name="cnpj" 
 				cam-variable-type="String"
 				ng-model="prestador.cnpj" 
