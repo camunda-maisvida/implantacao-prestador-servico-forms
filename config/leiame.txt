@@ -1,0 +1,10 @@
+
+Instalar o proxy:
+
+	npm install -g local-cors-proxy
+
+
+		
+Rodar o proxy:
+
+	lcp --proxyUrl http://localhost:8880 --port 8011
